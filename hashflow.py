@@ -9,12 +9,23 @@ from websockets.asyncio.client import connect
 from websockets.asyncio.server import serve
 import json
 streamers = {} #a collection of client connections
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
+sendbuffer=set()
+
+async def sendpost(post,connection):
+    try:
+        await connection.send(post)
+    except:
+        print ("sent to user failed")
 
 async def jetstream():
     #this is the client, it connects to Bluesky and reads every post flying by
     #
     print("Connecting to the jetstream")
-    async with connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post") as websocket:
+    async for websocket in connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post"):
+      try:
         while True:
             message = await websocket.recv()
             m=json.loads(message)
@@ -38,10 +49,13 @@ async def jetstream():
                   if tag in streamers:
                      for sub in streamers[tag]:
                          print(f"Sending {tag}")
-                         await sub.send(message) #we don't really need to send the whole thing if the clients hydrate from the aturl
+                         sendbuffer.add(asyncio.create_task(sendpost(message,sub)))
+                         #await sub.send(message) #we don't really need to send the whole thing if the clients hydrate from the aturl
                          #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
-                         await asyncio.sleep(0) #not sure this is required
-
+                         #await asyncio.sleep(0) #not sure this is required
+      except websockets.ConnectionClosed:
+          print("Jetstream dropped, reconnecting")
+          continue
 #this listens for incoming client connections
 async def handler(websocket):
     print ("Subscriber stream started")
@@ -68,18 +82,15 @@ async def handler(websocket):
             print("disconnected a streamer, unsub them")
             for t in subscriptions:
                 print(f"unsub from {t}")
-                streamers[t].discard(websocket)
+                streamers[t].remove(websocket)
             connected=False
 
 
 async def hashstreamer():
-    async with serve(handler, "", 8001):
-        await asyncio.get_running_loop().create_future()  # run forever
-
+    server=await serve(handler, "", 8001)
+    await server.serve_forever()
 
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     loop.create_task(jetstream())
     loop.create_task(hashstreamer())
     loop.run_forever()
