@@ -12,6 +12,7 @@ function renderskeet(m){
   $.ajax({url:"https://public.api.bsky.app/xrpc/app.bsky.feed.getPosts?uris="+aturl}).done(function(data){
     //console.log(data);
     var post=data.posts[0];
+    var labeled=post.labels.length;
     var skeet="<a target='_blank' class='link_secondary link-underline-opacity-0' href='https://bsky.app/profile/"+post.author.handle+"/post/"+m.commit.rkey+"'>";
     skeet=skeet+"<h5 class='card-title'>";
     skeet=skeet+"<img class='avatar' src="+post.author.avatar+"> ";
@@ -23,7 +24,11 @@ function renderskeet(m){
     skeet=skeet+"</h5></a>";
     //could process the facets and decorate the text with image embeds and clickable hashtags
     //wonder if clicking a hashtag should start streaming it?
-    skeet=skeet+ "<p class='card-text'>"+ post.record.text.replace('\n','<br/>') +"</p>";
+    if(labeled){
+        skeet=skeet+ "<p class='card-text text-danger bg-dark'>"+ post.labels[0].val.replace('\n','<br/>') +"</p>";
+    }else{
+        skeet=skeet+ "<p class='card-text'>"+ post.record.text.replace('\n','<br/>') +"</p>";
+    }
     addskeet(skeet);
   });
 }
