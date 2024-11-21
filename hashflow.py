@@ -13,6 +13,7 @@ streamers = {} #a collection of client connections
 async def jetstream():
     #this is the client, it connects to Bluesky and reads every post flying by
     #
+    print("Connecting to the jetstream")
     async with connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post") as websocket:
         while True:
             message = await websocket.recv()
@@ -36,28 +37,34 @@ async def jetstream():
                 for tag in tagset:
                   if tag in streamers:
                      for sub in streamers[tag]:
-                         print(f"Sending to a subscriber because of {tag}")
-                         await sub.send(message)
+                         print(f"Sending {tag}")
+                         await sub.send(message) #we don't really need to send the whole thing if the clients hydrate from the aturl
+                         #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
                          await asyncio.sleep(0) #not sure this is required
 
 #this listens for incoming client connections
 async def handler(websocket):
+    print ("Subscriber stream started")
     connected=True
     subscriptions=set()
     while connected:
-        print ("handling until stopped")
         try:
             message = await websocket.recv()
-            print(message) #this is the hashtag this client is subscribing to
+            #print(message) #this is the raw request
+            m=json.loads(message)
             #we should have a format for sub/unsub requests, but for now keeping it simple
-            if message in streamers:
-                streamers[message].add(websocket)
-            else:
-                streamers[message]={websocket}
-            subscriptions.add(message)
+            subtag=m['subscribe']
+            #first deal with any subscription request
+            if subtag and subtag in streamers:
+                streamers[subtag].add(websocket)
+            elif subtag:
+                streamers[subtag]={websocket}
+            subscriptions.add(subtag)
+            #then unsubscribe a tag if requested.
+            #don't think we need to deal with multiple subscription requests in one message, they can send many requests
 
         except Exception as e:
-            print(e);
+            print(e)
             print("disconnected a streamer, unsub them")
             for t in subscriptions:
                 print(f"unsub from {t}")
