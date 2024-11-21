@@ -50,7 +50,7 @@ async def handler(websocket):
     while connected:
         try:
             message = await websocket.recv()
-            #print(message) #this is the raw request
+            print(message) #this is the raw request
             m=json.loads(message)
             #we should have a format for sub/unsub requests, but for now keeping it simple
             subtag=m['subscribe']

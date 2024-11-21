@@ -28,7 +28,9 @@ function renderskeet(m){
   });
 }
 
-$(function(){window.websocket = new ReconnectingWebSocket("wss://apertum.ie:8002/");
+$(function(){
+  var l=window.location;
+  window.websocket = new ReconnectingWebSocket("wss://"+l.hostname+":8002/");
   websocket.addEventListener("message", ({data}) => {
 	var m=JSON.parse(data);
         renderskeet(m);
