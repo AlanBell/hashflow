@@ -36,7 +36,7 @@ function decorate(skeet,facets){
             var tag=facet.features[0].tag;
             var start=facet.index.byteStart;
             decorated=decorated+skeet.slice(byteindex(skeet,cursor),byteindex(skeet,start));
-            decorated=decorated+"<b class='hashtag' data-hashtag='"+tag+"'>#"+tag+"</b>";
+            decorated=decorated+"<strong class='hashtag' data-hashtag='"+tag+"'>#"+tag+"</strong>";
             cursor=facet.index.byteEnd;
          }
      });
@@ -102,7 +102,11 @@ function opensocket(){
 
 
 $(function(){
-  window.tags=new Set(window.location.hash.replace('#','').split(','));
+  if(window.location.hash){
+    window.tags=new Set(window.location.hash.replace('#','').split(','));
+  }else{
+    window.tags=new Set();
+  }
   opensocket();
   $('#tag').on("change",function(e){
     var hashlesstag=$('#tag').val().replace('#','');
@@ -112,7 +116,7 @@ $(function(){
 });
 
 document.addEventListener("click", function(e){
-  const target = e.target.closest("b.hashtag"); // Or any other selector.
+  const target = e.target.closest(".hashtag"); // Or any other selector.
   if(target){
     sendsub($(target).data("hashtag"));
   }
