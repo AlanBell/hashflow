@@ -26,7 +26,6 @@ async def jetstream():
     #
     print("Connecting to the jetstream")
     async for websocket in connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post"):
-      print("connected to jetstream")
       try:
         while True:
             message = await websocket.recv()
@@ -43,7 +42,7 @@ async def jetstream():
                       for tag in f['features']:
                         if tag['$type']=='app.bsky.richtext.facet#tag':
                           tagset.add(tag['tag'].lower())
-                          if tag['tag'].lower() in ['nsfw']:
+                          if tag['tag'].lower() in ['nsfw','porn','onlyfans']:
                             spicy=True
                 if 'labels' in m['commit']['record']:
                   spicy=True
@@ -55,7 +54,7 @@ async def jetstream():
                 for tag in tagset:
                   if tag in streamers:
                      for sub in streamers[tag]:
-                         print(f"Sending {tag}")
+                         print(sub.id.hex+f" Sending {tag}")
                          sendbuffer.add(asyncio.create_task(sendpost(message,sub)))
                          #await sub.send(message) #we don't really need to send the whole thing if the clients hydrate from the aturl
                          #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
@@ -67,13 +66,13 @@ async def jetstream():
           continue
 #this listens for incoming client connections
 async def handler(websocket):
-    print ("Subscriber stream started")
+    print (websocket.id.hex+" Subscriber stream started")
     connected=True
     subscriptions=set()
     while connected:
         try:
             message = await websocket.recv()
-            print(message) #this is the raw request
+            print(websocket.id.hex +" "+message) #this is the raw request
             m=json.loads(message)
             #we should have a format for sub/unsub requests, but for now keeping it simple
             subtag=m['subscribe']
