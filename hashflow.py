@@ -45,8 +45,8 @@ async def jetstream():
                           tagset.add(tag['tag'].lower())
                           if tag['tag'].lower() in ['nsfw']:
                             spicy=True
-              if 'labels' in m['commit']:
-                spicy=True
+                if 'labels' in m['commit']['record']:
+                  spicy=True
             #now we want to send m to any clients that asked for a tag in the message.
             if len(tagset)>0 and not (puritanical and spicy):
                 #print(tagset)
