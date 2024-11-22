@@ -87,9 +87,9 @@ async def handler(websocket):
 
         except Exception as e:
             print(e)
-            print("disconnected a streamer, unsub them")
+            print(websocket.id.hex+" disconnected a streamer, unsub them from everything")
             for t in subscriptions:
-                print(f"unsub from {t}")
+                print(websocket.id.hex+f" unsub from {t}")
                 streamers[t].remove(websocket)
             connected=False
 
