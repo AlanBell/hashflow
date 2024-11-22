@@ -13,6 +13,7 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 sendbuffer=set()
+puritanical=True #filter out anything with a label and anything with tag nsfw
 
 async def sendpost(post,connection):
     try:
@@ -31,6 +32,7 @@ async def jetstream():
             message = await websocket.recv()
             m=json.loads(message)
             tagset=set()
+            spicy=False
             #examine the message to get a set of unique tags it contains
             #there are better/more pythonic ways to do this
             if 'commit' in m:
@@ -41,8 +43,12 @@ async def jetstream():
                       for tag in f['features']:
                         if tag['$type']=='app.bsky.richtext.facet#tag':
                           tagset.add(tag['tag'].lower())
+                          if tag['tag'].lower() in ['nsfw']:
+                            spicy=True
+              if 'labels' in m['commit']:
+                spicy=True
             #now we want to send m to any clients that asked for a tag in the message.
-            if len(tagset)>0:
+            if len(tagset)>0 and not (puritanical and spicy):
                 #print(tagset)
                 #print(m)
                 #streamers should be sockets grouped into hashtag sets
@@ -54,7 +60,8 @@ async def jetstream():
                          #await sub.send(message) #we don't really need to send the whole thing if the clients hydrate from the aturl
                          #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
                          #await asyncio.sleep(0) #not sure this is required
-      except:
+      except Exception as e:
+          print (e)
           print("Jetstream dropped, reconnecting")
           await asyncio.sleep(10) #lets give it a moment to come back online
           continue
