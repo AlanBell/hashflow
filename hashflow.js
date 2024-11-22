@@ -17,9 +17,11 @@ function addskeet(skeet,cardcolour){
 }
 function sendsub(tag){
   if(tag){
-      window.tags.push(tag);
-      websocket.send(JSON.stringify({"subscribe":tag.trim().toLowerCase()}));
+      tag=tag.trim().toLowerCase();
+      window.tags.add(tag);
+      websocket.send(JSON.stringify({"subscribe":tag}));
       addskeet("Streaming posts from #"+tag,"lightblue");
+      window.location.hash=Array.from(window.tags).join(",");
   }
 }
 
@@ -86,13 +88,13 @@ function opensocket(){
     addskeet("Connection ready","lightblue");
     console.log("connection ready for data");
     window.tags.forEach(function(tag){
-      addskeet("Resub to #"+tag,"lightblue");
-      websocket.send(JSON.stringify({"subscribe":tag.trim().toLowerCase()}));
+      //addskeet("Asking for #"+tag,"lightblue");
+      sendsub(tag);
     });
   };
   websocket.onclose=function(){
     addskeet("Connection dropped, trying again soon","lightblue");
-    console.log("connection dropped, should reconnect and send our subscription requests");
+    //console.log("connection dropped, should reconnect and send our subscription requests");
     window.websocket = null;
     setTimeout(opensocket, 5000);
   };
@@ -100,8 +102,8 @@ function opensocket(){
 
 
 $(function(){
+  window.tags=new Set(window.location.hash.replace('#','').split(','));
   opensocket();
-  window.tags=[];
   $('#tag').on("change",function(e){
     var hashlesstag=$('#tag').val().replace('#','');
     //console.log("subscribing to "+hashlesstag);
