@@ -25,6 +25,7 @@ async def jetstream():
     #
     print("Connecting to the jetstream")
     async for websocket in connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post"):
+      print("connected to jetstream")
       try:
         while True:
             message = await websocket.recv()
@@ -53,8 +54,9 @@ async def jetstream():
                          #await sub.send(message) #we don't really need to send the whole thing if the clients hydrate from the aturl
                          #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
                          #await asyncio.sleep(0) #not sure this is required
-      except websockets.ConnectionClosed:
+      except:
           print("Jetstream dropped, reconnecting")
+          await asyncio.sleep(10) #lets give it a moment to come back online
           continue
 #this listens for incoming client connections
 async def handler(websocket):
