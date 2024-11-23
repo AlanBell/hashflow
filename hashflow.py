@@ -19,7 +19,7 @@ async def sendpost(post,connection):
     try:
         await connection.send(post)
     except:
-        print ("sent to user failed")
+        print ("send to user failed")
 
 async def jetstream():
     #this is the client, it connects to Bluesky and reads every post flying by
@@ -51,14 +51,17 @@ async def jetstream():
                 #print(tagset)
                 #print(m)
                 #streamers should be sockets grouped into hashtag sets
+                sendto=set()
+                #assemble a list of unique subscribers to send this to
                 for tag in tagset:
                   if tag in streamers:
                      for sub in streamers[tag]:
-                         print(sub.id.hex+f" Sending {tag}")
-                         sendbuffer.add(asyncio.create_task(sendpost(message,sub)))
-                         #await sub.send(message) #we don't really need to send the whole thing if the clients hydrate from the aturl
-                         #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
-                         #await asyncio.sleep(0) #not sure this is required
+                         sendto.add(sub)
+                for sub in sendto:
+                  print(sub.id.hex+f" Sending {tag}")
+                  sendbuffer.add(asyncio.create_task(sendpost(message,sub)))
+                  #we don't really need to send the whole thing if the clients hydrate from the aturl
+                  #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
       except Exception as e:
           print (e)
           print("Jetstream dropped, reconnecting")
