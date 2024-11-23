@@ -9,11 +9,13 @@ function byteindex(string,i) {
   }
 
 
-function addskeet(skeet,cardcolour){
+function addskeet(skeet,cardcolour,timeout=5000){
     //prepare a div with the skeet
     var skeetwrapped=$("<div class='card shadow my-2' style='background:"+cardcolour+";'><div class='card-body'>"+skeet+"</div></div>");
     skeetwrapped.hide().prependTo("#skeetstream").slideDown();
-
+    setTimeout(function(sw){
+      sw.fadeOut(500,function(){sw.remove()});
+    },timeout,skeetwrapped);
 }
 function sendsub(tag){
   if(tag){
@@ -27,20 +29,32 @@ function sendsub(tag){
 
 
 function decorate(skeet,facets){
-     //apparently we may run into some utf16 to utf8 issues in edge cases
      var decorated='';
      var cursor=0;
-     //we trust the facets are in ascending bytestart order 
+     //we trust the facets will be processed in ascending bytestart order which seems to work
      facets.forEach(function(facet){
+         //work out the start and end of the facet, and the previous cursor position in terms of sliceable positions
+         var start=byteindex(skeet,facet.index.byteStart)
+         var end=byteindex(skeet,facet.index.byteEnd);
+         var stringcursor=byteindex(skeet,cursor);
+         //process facets we recognise
          if(facet.features[0].$type=='app.bsky.richtext.facet#tag'){
             var tag=facet.features[0].tag;
-            var start=facet.index.byteStart;
-            decorated=decorated+skeet.slice(byteindex(skeet,cursor),byteindex(skeet,start));
+            decorated=decorated+skeet.slice(stringcursor,start);
             decorated=decorated+"<strong class='hashtag' data-hashtag='"+tag+"'>#"+tag+"</strong>";
             cursor=facet.index.byteEnd;
          }
+         if(facet.features[0].$type=='app.bsky.richtext.facet#link'){
+            var uri=facet.features[0].uri;
+            decorated=decorated+skeet.slice(stringcursor,start);
+            decorated=decorated+"<a href='"+uri+"'>"+skeet.slice(start,end)+"</a>";
+            cursor=facet.index.byteEnd;
+         }
+         //if we don't recognise the facet don't move the cursor on.
      });
+     //add on the end of the skeet after the last facet if there was one
      decorated=decorated+skeet.slice(byteindex(skeet,cursor));
+
      return decorated;
 }
 
@@ -72,7 +86,7 @@ function renderskeet(m){
       }else{
           skeet=skeet+ "<p class='card-text'>"+ decorated +"</p>";
       }
-      addskeet(skeet);
+      addskeet(skeet,'white',1800000); //skeets last for 30 minutes
    }
   });
 }
@@ -112,6 +126,7 @@ $(function(){
     var hashlesstag=$('#tag').val().replace('#','');
     //console.log("subscribing to "+hashlesstag);
     sendsub(hashlesstag);
+    $('#tag').val('');
   });
 });
 
