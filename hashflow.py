@@ -3,7 +3,8 @@
 #this opens a websocket client connection to the bluesky jetstream and reads all messages
 #it acts as a websocket server accepting many connections, these can send a message with a hashtag
 #the server will forward all posts containing that hashtag to the connections who asked for it
-
+import logging
+logger = logging.getLogger(__name__)
 import asyncio
 from websockets.asyncio.client import connect
 from websockets.asyncio.server import serve
@@ -19,11 +20,11 @@ async def sendpost(post,connection):
     try:
         await connection.send(post)
     except:
-        print ("send to user failed")
+        logger.info ("send to user failed")
 
 async def jetstream():
   #this is the client, it connects to Bluesky and reads every post flying by
-  print("Connecting to the jetstream")
+  logger.info("Connecting to the jetstream")
   try:
     async for websocket in connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post"):
       try:
@@ -48,37 +49,37 @@ async def jetstream():
                   spicy=True
             #now we want to send m to any clients that asked for a tag in the message.
             if len(tagset)>0 and not (puritanical and spicy):
-                #print(tagset)
-                #print(m)
+                #logger.info(tagset)
+                #logger.info(m)
                 #streamers should be sockets grouped into hashtag sets
                 sendto=set()
                 #assemble a list of unique subscribers to send this to
                 for tag in tagset:
                   if tag in streamers:
                      for sub in streamers[tag]:
-                         print(sub.id.hex+f" Sending {tag}")
+                         logger.info(sub.id.hex+f" Sending {tag}")
                          sendto.add(sub)
                 for sub in sendto:
                   sendbuffer.add(asyncio.create_task(sendpost(message,sub)))
                   #we don't really need to send the whole thing if the clients hydrate from the aturl
                   #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
       except Exception as e:
-          print (e)
-          print("Jetstream dropped, reconnecting")
+          logger.info (e)
+          logger.info("Jetstream dropped, reconnecting")
           await asyncio.sleep(10) #lets give it a moment to come back online
           continue
   except Exception as e:
-    print(e)
-    print("didn't connect properly to the jetstream")
+    logger.info(e)
+    logger.info("didn't connect properly to the jetstream")
 #this listens for incoming client connections
 async def handler(websocket):
-    print (websocket.id.hex+" Subscriber stream started")
+    logger.info (websocket.id.hex+" Subscriber stream started")
     connected=True
     subscriptions=set()
     while connected:
         try:
             message = await websocket.recv()
-            print(websocket.id.hex +" "+message) #this is the raw request
+            logger.info(websocket.id.hex +" "+message) #this is the raw request
             m=json.loads(message)
             #we should have a format for sub/unsub requests, but for now keeping it simple
             subtag=m['subscribe']
@@ -92,24 +93,25 @@ async def handler(websocket):
             #don't think we need to deal with multiple subscription requests in one message, they can send many requests
 
         except Exception as e:
-            print(e)
-            print(websocket.id.hex+" disconnected a streamer, unsub them from everything")
+            logger.info(e)
+            logger.info(websocket.id.hex+" disconnected a streamer, unsub them from everything")
             for t in subscriptions:
-                print(websocket.id.hex+f" unsub from {t}")
+                logger.info(websocket.id.hex+f" unsub from {t}")
                 streamers[t].remove(websocket)
             connected=False
 
 
 async def hashstreamer():
-    print("awaiting incomming connections")
+    logger.info("awaiting incomming connections")
     try:
        server=await serve(handler, "", 8001)
        await server.serve_forever()
     except Exception as e:
-       print ("serving a client failed")
-       print(e)
+       logger.info ("serving a client failed")
+       logger.info(e)
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='hashflow.log', level=logging.INFO)
     loop.create_task(jetstream())
     loop.create_task(hashstreamer())
     loop.run_forever()
