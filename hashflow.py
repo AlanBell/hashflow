@@ -22,9 +22,9 @@ async def sendpost(post,connection):
         print ("send to user failed")
 
 async def jetstream():
-    #this is the client, it connects to Bluesky and reads every post flying by
-    #
-    print("Connecting to the jetstream")
+  #this is the client, it connects to Bluesky and reads every post flying by
+  print("Connecting to the jetstream")
+  try:
     async for websocket in connect("wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post"):
       try:
         while True:
@@ -56,9 +56,9 @@ async def jetstream():
                 for tag in tagset:
                   if tag in streamers:
                      for sub in streamers[tag]:
+                         print(sub.id.hex+f" Sending {tag}")
                          sendto.add(sub)
                 for sub in sendto:
-                  print(sub.id.hex+f" Sending {tag}")
                   sendbuffer.add(asyncio.create_task(sendpost(message,sub)))
                   #we don't really need to send the whole thing if the clients hydrate from the aturl
                   #but for now, lets not be opinionated on how the clients deal with it, and just send raw jetstream records
@@ -67,6 +67,9 @@ async def jetstream():
           print("Jetstream dropped, reconnecting")
           await asyncio.sleep(10) #lets give it a moment to come back online
           continue
+  except Exception as e:
+    print(e)
+    print("didn't connect properly to the jetstream")
 #this listens for incoming client connections
 async def handler(websocket):
     print (websocket.id.hex+" Subscriber stream started")
@@ -98,8 +101,13 @@ async def handler(websocket):
 
 
 async def hashstreamer():
-    server=await serve(handler, "", 8001)
-    await server.serve_forever()
+    print("awaiting incomming connections")
+    try:
+       server=await serve(handler, "", 8001)
+       await server.serve_forever()
+    except Exception as e:
+       print ("serving a client failed")
+       print(e)
 
 if __name__ == "__main__":
     loop.create_task(jetstream())

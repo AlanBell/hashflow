@@ -17,8 +17,11 @@ strong{color:darkblue;font-weight:normal;}
 </head>
 <body>
 <header>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-<a class="navbar-brand" href="#">Hashflow</a> <input class="form-control form-control-sm" type="text" placeholder="#bluesky" id="tag"/>
+<nav class="navbar navbar-dark bg-dark">
+  <a class="navbar-brand" href="#">Hashflow</a> 
+  <form class="form-inline">
+    <input class="nav-item form-control mr-sm-2" type="text" placeholder="#bluesky" id="tag" aria-label="Search"/>
+  </form>
 </nav>
 </header>
 
@@ -29,7 +32,7 @@ strong{color:darkblue;font-weight:normal;}
             <button class="btn float-end" data-bs-toggle="offcanvas" data-bs-target="#offcanvas" role="button">
                 <i class="bi bi-arrow-right-square-fill fs-3" data-bs-toggle="offcanvas" data-bs-target="#offcanvas"></i>
             </button>
-<div id="skeetstream" class="container"></div>
+            <div id="skeetstream" class="container"></div>
         </div>
     </div>
 </div>

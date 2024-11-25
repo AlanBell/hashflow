@@ -14,7 +14,7 @@ function addskeet(skeet,cardcolour,timeout=5000){
     var skeetwrapped=$("<div class='card shadow my-2' style='background:"+cardcolour+";'><div class='card-body'>"+skeet+"</div></div>");
     skeetwrapped.hide().prependTo("#skeetstream").slideDown();
     setTimeout(function(sw){
-      sw.fadeOut(500,function(){sw.remove()});
+      sw.slideUp(500,function(){sw.remove()});
     },timeout,skeetwrapped);
 }
 function sendsub(tag){
